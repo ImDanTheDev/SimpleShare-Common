@@ -18,8 +18,8 @@
   "license": "ISC",
   "peerDependencies": {
     "@omnifire/api": "^1.1.2",
-    "@omnifire/rn": "^1.1.2",
-    "@omnifire/web": "^1.1.2"
+    "@omnifire/rn": "^1.1.3",
+    "@omnifire/web": "^1.1.3"
   },
   "peerDependenciesMeta": {
     "@omnifire/api": {
