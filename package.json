@@ -1,9 +1,9 @@
 {
   "name": "simpleshare-common",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Common code shared between various Simple Share applications.",
   "repository": {
-    "url": "https://github.com/ImDanTheDev/simpleshare-common"
+    "url": "https://github.com/ImDanTheDev/SimpleShare-Common"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
