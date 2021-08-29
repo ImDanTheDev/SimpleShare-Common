@@ -17,9 +17,9 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@omnifire/api": "^1.1.2",
-    "@omnifire/rn": "^1.1.3",
-    "@omnifire/web": "^1.1.3"
+    "@omnifire/api": "^1.2.0",
+    "@omnifire/rn": "^1.2.0",
+    "@omnifire/web": "^1.2.0"
   },
   "peerDependenciesMeta": {
     "@omnifire/api": {
@@ -33,7 +33,7 @@
     }
   },
   "devDependencies": {
-    "@omnifire/api": "^1.1.2",
+    "@omnifire/api": "^1.2.0",
     "typescript": "^4.4.2"
   },
   "dependencies": {}
