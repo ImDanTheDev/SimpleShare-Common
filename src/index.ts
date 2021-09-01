@@ -1,8 +1,6 @@
-export * from './database';
-export * from './auth';
-export * from './storage';
 export * from './models';
 export * from './SimpleShareError';
+export * from './app';
 
 import * as constants from './constants';
 export { constants }

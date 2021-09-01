@@ -6,4 +6,8 @@ export default interface IShare {
     fromProfileId: string;
     toUid: string;
     toProfileId: string;
+    fromDisplayName?: string;
+    fromProfileName?: string;
+    toDisplayName?: string;
+    toProfileName?: string;
 }
