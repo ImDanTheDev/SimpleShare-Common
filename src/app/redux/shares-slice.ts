@@ -58,16 +58,32 @@ export const deleteCloudShare = createAsyncThunk('shares/deleteCloudShare', asyn
 export const startShareListener = createAsyncThunk('shares/startShareListener', async (profile: IProfile, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     await serviceHandler?.startShareListener(uid, profile, async (share) => {
-        const toPublicGeneralInfo: IPublicGeneralInfo = await serviceHandler.getPublicGeneralInfo(share.toUid);
-        const toProfileName = await serviceHandler.getProfileNameById(share.toUid, share.toProfileId);
-        thunkAPI.dispatch(addShare({
+        const currentProfileId = ((thunkAPI.getState() as any).profiles as ProfilesState).currentProfileId;
+        if (share.toProfileId !== currentProfileId) {
+            // The profile id of the received share does not match the current profile.
+            // This share is likely from a previous request that is no longer needed.
+            // TODO: Do not store ONLY the current profile's shares in state. Fetch
+            // shares when a profile is selected, but do not clear shares of the previous
+            // profile. Keep them in state to improve switching speed and minimize API calls.
+            return;
+        }
+        // Dispatch the initial share then update with the fetched the names later.
+        thunkAPI.dispatch(addShare(share));
+
+        const nameData = await Promise.all([
+            serviceHandler.getPublicGeneralInfo(share.fromUid),
+            serviceHandler.getProfileNameById(share.toUid, share.fromProfileId)
+        ]);
+        
+        thunkAPI.dispatch(updateShare({
             ...share,
-            fromDisplayName: toPublicGeneralInfo.displayName,
-            fromProfileName: toProfileName
+            fromDisplayName: nameData[0].displayName,
+            fromProfileName: nameData[1]
         }));
-    }, (share) => {
+
+    }, async (share) => {
         thunkAPI.dispatch(updateShare(share));
-    }, (share) => {
+    }, async (share) => {
         thunkAPI.dispatch(deleteShare(share));
     });
 });
@@ -99,6 +115,8 @@ export const sharesSlice = createSlice({
             target.fromUid = action.payload.fromUid;
             target.toProfileId = action.payload.toProfileId;
             target.toUid = action.payload.toUid;
+            target.fromDisplayName = action.payload.fromDisplayName;
+            target.fromProfileName = action.payload.fromProfileName;
         },
         setCurrentShare: (state, action: PayloadAction<IShare>) => {
             state.currentShare = action.payload;

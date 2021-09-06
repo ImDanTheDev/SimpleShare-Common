@@ -1,4 +1,5 @@
 import { IAuth, IFirebase, IFirestore, IStorage } from "@omnifire/api";
+import { updateShare } from ".";
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
 import IUser from "../models/IUser";
 import { ErrorCode, SimpleShareError } from "../SimpleShareError";
@@ -165,15 +166,17 @@ export default class FirebaseServiceHandler implements IServiceHandler {
     async startShareListener(
         uid: string | undefined,
         profile: IProfile,
-        addListener: (share: IShare) => void,
-        updateListener: (share: IShare) => void,
-        deleteListener: (share: IShare) => void): Promise<void> {
+        addListener: (share: IShare) => Promise<void>,
+        updateListener: (share: IShare) => Promise<void>,
+        deleteListener: (share: IShare) => Promise<void>): Promise<void> {
         if (!uid || !profile.id) return;
         const profileSharesCollection = this.firestore.collection('shares').doc(uid).collection(profile.id);
 
-        const unsubscribe = profileSharesCollection.onSnapshot((snapshot) => {
+        const unsubscribe = profileSharesCollection.onSnapshot(async (snapshot) => {
             const docChanges = snapshot.docChanges();
-            docChanges.forEach((change) => {
+            const changeCallbacks: Promise<void>[] = [];
+            const start1 = performance.now();
+            docChanges.forEach(async (change) => {
                 const changedShareId = change.doc.id;
                 const shareData = change.doc.data();
                 const share: IShare = {
@@ -188,16 +191,17 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
                 switch (change.type) {
                     case 'added':
-                        addListener(share);
+                        changeCallbacks.push(addListener(share));
                         break;
                     case 'modified':
-                        updateListener(share);
+                        changeCallbacks.push(updateListener(share));
                         break;
                     case 'removed':
-                        deleteListener(share);
+                        changeCallbacks.push(deleteListener(share));
                         break;
                 }
             });
+            await Promise.all(changeCallbacks);
         });
 
         // Unsubscribe and remove current share listeners.
