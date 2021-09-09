@@ -19,4 +19,5 @@ export default interface IServiceHandler {
     getProfileNameById: (uid: string, profileId: string) => Promise<string | undefined>;
     uploadProfilePicture: (uid: string, pfp: Blob) => Promise<string>;
     deleteProfilePicture: (uid: string, pfpURL: string) => Promise<void>;
+    getProfilePicture: (uid: string, profileId: string) => Promise<string>;
 }

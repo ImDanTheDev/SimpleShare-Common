@@ -315,4 +315,18 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         const pfpFileRef = this.storage.refFromURL(pfpURL);
         await pfpFileRef.delete();
     }
+
+    async getProfilePicture(uid: string, profileId: string): Promise<string> {
+        const profileDocRef = this.firestore.collection('accounts').doc(uid).collection('profiles').doc(profileId);
+        const profileDoc = await profileDocRef.get();
+
+        if (profileDoc.exists) {
+            const profileData = profileDoc.data();
+            if (profileData) {
+                return profileData.pfp || constants.DEFAULT_PFP_ID;
+            }
+        }
+
+        return constants.DEFAULT_PFP_ID;
+    }
 }

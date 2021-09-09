@@ -42,12 +42,9 @@ export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {
     }
 
     await serviceHandler.sendShare(share);
-
-    const toPublicGeneralInfo: IPublicGeneralInfo = await serviceHandler.getPublicGeneralInfo(toUid);
-    thunkAPI.dispatch(addShareToOutbox({
+    await thunkAPI.dispatch(addShareToOutbox({
         ...share,
-        toProfileName: sendData.toProfileName,
-        toDisplayName: toPublicGeneralInfo.displayName
+        toProfileName: sendData.toProfileName
     }));
 });
 
@@ -72,13 +69,13 @@ export const startShareListener = createAsyncThunk('shares/startShareListener', 
 
         const nameData = await Promise.all([
             serviceHandler.getPublicGeneralInfo(share.fromUid),
-            serviceHandler.getProfileNameById(share.toUid, share.fromProfileId)
+            serviceHandler.getProfileNameById(share.fromUid, share.fromProfileId),
         ]);
         
         thunkAPI.dispatch(updateShare({
-            ...share,
-            fromDisplayName: nameData[0].displayName,
-            fromProfileName: nameData[1]
+                ...share,
+                fromDisplayName: nameData[0].displayName,
+                fromProfileName: nameData[1]
         }));
 
     }, async (share) => {
@@ -92,9 +89,6 @@ export const sharesSlice = createSlice({
     name: 'shares',
     initialState,
     reducers: {
-        setShares: (state, action: PayloadAction<IShare[]>) => {
-            state.shares = action.payload;
-        },
         addShare: (state, action: PayloadAction<IShare>) => {
             if (
                 state.shares.findIndex((s) => s.id === action.payload.id) !== -1
@@ -147,7 +141,6 @@ export const sharesSlice = createSlice({
 });
 
 export const {
-    setShares,
     addShare,
     deleteShare,
     updateShare,
