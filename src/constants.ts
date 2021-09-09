@@ -8,3 +8,5 @@ export const MAX_SHARE_TEXT_LENGTH = 2000;
 
 export const MIN_DISPLAY_NAME_LENGTH = 2;
 export const MAX_DISPLAY_NAME_LENGTH = 20;
+
+export const DEFAULT_PFP_ID = 'default';

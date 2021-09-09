@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, serviceHandler } from '..';
+import { constants } from '../..';
 import { IProfile } from '../../models';
 import { ErrorCode, SimpleShareError } from '../../SimpleShareError';
 import { startShareListener } from './shares-slice';
@@ -22,14 +23,29 @@ const initialState: ProfilesState = {
     createProfileError: undefined
 };
 
-export const createProfile = createAsyncThunk('profiles/createProfile', async (profile: IProfile, thunkAPI) => {
+export const createProfile = createAsyncThunk('profiles/createProfile', async (profile: {profile: IProfile, pfpSrc?: Blob}, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
-    await serviceHandler.createProfile(uid, profile);
+
+    let pfpURL: string | undefined = undefined;
+
+    if (profile.pfpSrc) {
+        // Upload profile picture
+        pfpURL = await serviceHandler.uploadProfilePicture(uid, profile.pfpSrc);
+    }
+
+    await serviceHandler.createProfile(uid, {
+        ...profile.profile,
+        // Use the PFP URL if one was created, otherwise use the provided PFP URL. If neither exists, use the default PFP ID.
+        pfp: pfpURL || profile.profile.pfp || constants.DEFAULT_PFP_ID
+    });
 });
 
 export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile', async (profile: IProfile, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
+    if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
+    
+    if (profile.pfp) await serviceHandler.deleteProfilePicture(uid, profile.pfp);
     await serviceHandler.deleteProfile(uid, profile);
 });
 
@@ -92,6 +108,7 @@ export const profilesSlice = createSlice({
             );
             if (!target) return;
             target.name = action.payload.name;
+            target.pfp = action.payload.pfp;
         },
         setProfiles: (state, action: PayloadAction<IProfile[]>) => {
             state.profiles = action.payload;

@@ -1,9 +1,11 @@
 import { IAuth, IFirebase, IFirestore, IStorage } from "@omnifire/api";
 import { updateShare } from ".";
+import { constants } from "..";
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
 import IUser from "../models/IUser";
 import { ErrorCode, SimpleShareError } from "../SimpleShareError";
 import IServiceHandler from "./IServiceHandler";
+import { v4 as uuid} from 'uuid';
 
 interface IShareListener {
     uid: string;
@@ -99,8 +101,10 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
     async createProfile(uid: string | undefined, profile: IProfile): Promise<void> {
         const profileDocRef = this.firestore.collection('accounts').doc(uid).collection('profiles').doc(profile.id);
+
         await profileDocRef.set({
-            name: profile.name
+            name: profile.name,
+            pfp: profile.pfp,
         });
     }
 
@@ -133,6 +137,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 const profile: IProfile = {
                     id: profileId,
                     name: profileData.name,
+                    pfp: profileData.pfp,
                 };
 
                 switch (change.type) {
@@ -175,7 +180,6 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         const unsubscribe = profileSharesCollection.onSnapshot(async (snapshot) => {
             const docChanges = snapshot.docChanges();
             const changeCallbacks: Promise<void>[] = [];
-            const start1 = performance.now();
             docChanges.forEach(async (change) => {
                 const changedShareId = change.doc.id;
                 const shareData = change.doc.data();
@@ -286,5 +290,29 @@ export default class FirebaseServiceHandler implements IServiceHandler {
             }
         }
         return undefined;
+    }
+
+    async uploadProfilePicture(uid: string, pfp: Blob): Promise<string> {
+        const fileName: string = uuid();
+        const fileExtension: string = pfp.type.slice(pfp.type.lastIndexOf('/') + 1);
+        const pfpFileRef = this.storage.ref(`users/${uid}/pfps/${fileName}.${fileExtension}`);
+
+        await new Promise<void>((resolve, reject) => {
+            const uploadTaskSnap = pfpFileRef.put(pfp, {contentType: pfp.type});
+            uploadTaskSnap.then(async (snap) => {
+                resolve();
+            }).catch((e) => {
+                reject(e);
+            })
+        });
+
+        return await pfpFileRef.getDownloadURL() as string;
+    }
+
+    async deleteProfilePicture(uid: string, pfpURL: string): Promise<void> {
+        if (pfpURL === constants.DEFAULT_PFP_ID) return;
+
+        const pfpFileRef = this.storage.refFromURL(pfpURL);
+        await pfpFileRef.delete();
     }
 }

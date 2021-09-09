@@ -17,4 +17,6 @@ export default interface IServiceHandler {
     getUIDFromPhoneNumber: (phoneNumber: string) => Promise<string | undefined>;
     getProfileIdByName: (uid: string, profileName: string) => Promise<string | undefined>;
     getProfileNameById: (uid: string, profileId: string) => Promise<string | undefined>;
+    uploadProfilePicture: (uid: string, pfp: Blob) => Promise<string>;
+    deleteProfilePicture: (uid: string, pfpURL: string) => Promise<void>;
 }
