@@ -23,7 +23,7 @@ const initialState: ProfilesState = {
     createProfileError: undefined
 };
 
-export const createProfile = createAsyncThunk('profiles/createProfile', async (profile: {profile: IProfile, pfpSrc?: Blob}, thunkAPI) => {
+export const createProfile = createAsyncThunk('profiles/createProfile', async (profile: {profile: IProfile, pfpSrc?: Blob | {filePath: string, fileType: string}}, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
 
@@ -45,7 +45,7 @@ export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile'
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
     
-    if (profile.pfp) await serviceHandler.deleteProfilePicture(uid, profile.pfp);
+    if (profile.pfp) await serviceHandler.deleteProfilePicture(profile.pfp);
     await serviceHandler.deleteProfile(uid, profile);
 });
 

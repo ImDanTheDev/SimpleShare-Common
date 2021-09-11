@@ -1,4 +1,4 @@
-import { IAuth, IFirebase, IFirestore, IStorage } from "@omnifire/api";
+import { IAuth, IFirebase, IFirestore, IReference, IStorage } from "@omnifire/api";
 import { updateShare } from ".";
 import { constants } from "..";
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
@@ -292,24 +292,27 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         return undefined;
     }
 
-    async uploadProfilePicture(uid: string, pfp: Blob): Promise<string> {
+    async uploadProfilePicture(uid: string, pfp: Blob | {filePath: string, fileType: string}): Promise<string> {
         const fileName: string = uuid();
-        const fileExtension: string = pfp.type.slice(pfp.type.lastIndexOf('/') + 1);
+
+        const isBlob = pfp instanceof Blob;
+        const fileType = isBlob ? pfp.type : pfp.fileType;
+        const fileExtension = fileType.slice(fileType.lastIndexOf('/') + 1);
         const pfpFileRef = this.storage.ref(`users/${uid}/pfps/${fileName}.${fileExtension}`);
+        const uploadTaskSnap = isBlob ? pfpFileRef.put(pfp, {contentType: pfp.type}) : pfpFileRef.putFile(pfp.filePath, {contentType: pfp.fileType});
 
         await new Promise<void>((resolve, reject) => {
-            const uploadTaskSnap = pfpFileRef.put(pfp, {contentType: pfp.type});
-            uploadTaskSnap.then(async (snap) => {
+            uploadTaskSnap.then(async () => {
                 resolve();
-            }).catch((e) => {
+            }).catch((e: any) => {
                 reject(e);
             })
         });
 
-        return await pfpFileRef.getDownloadURL() as string;
+        return await pfpFileRef?.getDownloadURL() as string;
     }
 
-    async deleteProfilePicture(uid: string, pfpURL: string): Promise<void> {
+    async deleteProfilePicture(pfpURL: string): Promise<void> {
         if (pfpURL === constants.DEFAULT_PFP_ID) return;
 
         const pfpFileRef = this.storage.refFromURL(pfpURL);
