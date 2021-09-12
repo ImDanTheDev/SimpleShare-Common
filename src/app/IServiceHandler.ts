@@ -20,4 +20,7 @@ export default interface IServiceHandler {
     uploadProfilePicture: (uid: string, pfp: Blob | {filePath: string, fileType: string}) => Promise<string>;
     deleteProfilePicture: (pfpURL: string) => Promise<void>;
     getProfilePicture: (uid: string, profileId: string) => Promise<string>;
+    uploadFilePath: (ownerUID: string,  recipientUID: string, pathSrc: {filePath: string, fileType: string}) => Promise<string>;
+    uploadFileBlob: (ownerUID: string, recipientUID: string, blobSrc: {blob: Blob, ext: string}) => Promise<string>;
+    deleteFile: (fileURL: string) => Promise<void>;
 }

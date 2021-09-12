@@ -1,7 +1,7 @@
 export default interface IShare {
     id?: string;
-    type: string;
-    content: string;
+    textContent?: string;
+    fileURL?: string;
     fromUid: string;
     fromProfileId: string;
     toUid: string;

@@ -1,4 +1,4 @@
-import { IAuth, IFirebase, IFirestore, IReference, IStorage } from "@omnifire/api";
+import { IAuth, IFirebase, IFirestore, IReference, IStorage, OFUploadMetadata } from "@omnifire/api";
 import { updateShare } from ".";
 import { constants } from "..";
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
@@ -185,8 +185,8 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 const shareData = change.doc.data();
                 const share: IShare = {
                     id: changedShareId,
-                    type: shareData.type,
-                    content: shareData.content,
+                    textContent: shareData.textContent || shareData.content, // TODO: Remove .content
+                    fileURL: shareData.fileURL,
                     fromUid: shareData.fromUid,
                     fromProfileId: shareData.fromProfileId,
                     toUid: shareData.toUid,
@@ -314,9 +314,12 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
     async deleteProfilePicture(pfpURL: string): Promise<void> {
         if (pfpURL === constants.DEFAULT_PFP_ID) return;
+        await this.deleteFile(pfpURL);
+    }
 
-        const pfpFileRef = this.storage.refFromURL(pfpURL);
-        await pfpFileRef.delete();
+    async deleteFile(fileURL: string): Promise<void> {
+        const fileRef = this.storage.refFromURL(fileURL);
+        await fileRef.delete();
     }
 
     async getProfilePicture(uid: string, profileId: string): Promise<string> {
@@ -331,5 +334,56 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         }
 
         return constants.DEFAULT_PFP_ID;
+    }
+
+    async uploadFilePath(ownerUID: string,  recipientUID: string, pathSrc: {filePath: string, fileType: string}): Promise<string> {
+        const fileName: string = uuid();
+        const fileExtension = pathSrc.filePath.slice(pathSrc.filePath.lastIndexOf('.') + 1);
+        const fileRef = this.storage.ref(`files/${fileName}.${fileExtension}`)
+        const metadata: OFUploadMetadata = {
+            contentType: pathSrc.fileType,
+            customMetadata: {
+                owner: ownerUID,
+                recipient: recipientUID
+            }
+        };
+
+        const uploadTaskSnap = fileRef.putFile(pathSrc.filePath, metadata);
+
+        await new Promise<void>((resolve, reject) => {
+            uploadTaskSnap.then(async () => {
+                resolve();
+            }).catch((e: any) => {
+                reject(e);
+            })
+        });
+
+        return await fileRef?.getDownloadURL() as string;
+    }
+
+    async uploadFileBlob(ownerUID: string, recipientUID: string, blobSrc: {blob: Blob, ext: string}): Promise<string> {
+        const fileName: string = uuid();
+        const fileExtension = blobSrc.ext;
+        const fileRef = this.storage.ref(`files/${fileName}.${fileExtension}`);
+
+        const metadata: OFUploadMetadata = {
+            contentType: blobSrc.blob.type,
+            customMetadata: {
+                owner: ownerUID,
+                recipient: recipientUID
+            }
+        };
+
+        const uploadTaskSnap = fileRef.put(blobSrc.blob, metadata);
+
+        await new Promise<void>((resolve, reject) => {
+            uploadTaskSnap.then(async () => {
+                resolve();
+            }).catch((e: any) => {
+                reject(e);
+            })
+        });
+
+        return await fileRef?.getDownloadURL() as string;
     }
 }

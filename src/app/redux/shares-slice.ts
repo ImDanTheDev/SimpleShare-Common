@@ -21,7 +21,7 @@ const initialState: SharesState = {
     sendShareError: undefined
 };
 
-export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {toPhoneNumber: string, toProfileName: string, share: {content: string, type: string}}, thunkAPI) => {
+export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {toPhoneNumber: string, toProfileName: string, share: {textContent?: string, fileSrc?: {blob: Blob, ext: string} | {filePath: string, fileType: string}}}, thunkAPI) => {
     const fromUid: string | undefined = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     const fromProfileId: string | undefined = ((thunkAPI.getState() as any).profiles as ProfilesState).currentProfileId;
     if (!fromUid || !fromProfileId) throw new SimpleShareError(ErrorCode.APP_ERROR, `The user's UID or profile ID is undefined`);
@@ -32,13 +32,23 @@ export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {
     const toProfileId: string | undefined = await serviceHandler.getProfileIdByName(toUid, sendData.toProfileName);
     if (!toProfileId) throw new SimpleShareError(ErrorCode.APP_ERROR, `The recipient profile does not exist.`);
 
+    let fileURL: string | undefined = undefined;
+
+    if (sendData.share.fileSrc) {
+        if (sendData.share.fileSrc as {blob: Blob, ext: string}) {
+            fileURL = await serviceHandler.uploadFileBlob(fromUid, toUid, sendData.share.fileSrc as {blob: Blob, ext: string});
+        } else {
+            fileURL = await serviceHandler.uploadFilePath(fromUid, toUid, sendData.share.fileSrc as {filePath: string, fileType: string});
+        }
+    }
+
     const share: IShare = {
         fromUid: fromUid,
         fromProfileId: fromProfileId,
         toUid: toUid,
         toProfileId: toProfileId,
-        content: sendData.share.content,
-        type: sendData.share.type
+        textContent: sendData.share.textContent,
+        fileURL: fileURL,
     }
 
     await serviceHandler.sendShare(share);
@@ -50,6 +60,9 @@ export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {
 
 export const deleteCloudShare = createAsyncThunk('shares/deleteCloudShare', async (share: IShare, thunkAPI) => {
     await serviceHandler.deleteShare(share);
+    if (share.fileURL) {
+        await serviceHandler.deleteFile(share.fileURL);
+    }
 });
 
 export const startShareListener = createAsyncThunk('shares/startShareListener', async (profile: IProfile, thunkAPI) => {
@@ -103,8 +116,8 @@ export const sharesSlice = createSlice({
         updateShare: (state, action: PayloadAction<IShare>) => {
             const target = state.shares.find((x) => x.id === action.payload.id);
             if (!target) return;
-            target.content = action.payload.content;
-            target.type = action.payload.type;
+            target.textContent = action.payload.textContent;
+            target.fileURL = action.payload.fileURL;
             target.fromProfileId = action.payload.fromProfileId;
             target.fromUid = action.payload.fromUid;
             target.toProfileId = action.payload.toProfileId;
