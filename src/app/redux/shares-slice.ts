@@ -35,7 +35,11 @@ export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {
     let fileURL: string | undefined = undefined;
 
     if (sendData.share.fileSrc) {
-        if (sendData.share.fileSrc as {blob: Blob, ext: string}) {
+        const isBlobSrc = (src: {blob: Blob, ext: string} | {filePath: string, fileType: string}): src is {blob: Blob, ext: string} => {
+            return 'blob' in src && 'ext' in src;
+        }
+
+        if (isBlobSrc(sendData.share.fileSrc)) {
             fileURL = await serviceHandler.uploadFileBlob(fromUid, toUid, sendData.share.fileSrc as {blob: Blob, ext: string});
         } else {
             fileURL = await serviceHandler.uploadFilePath(fromUid, toUid, sendData.share.fileSrc as {filePath: string, fileType: string});
