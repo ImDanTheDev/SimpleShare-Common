@@ -33,6 +33,10 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         this.firestore = firestore;
         this.auth = auth;
         this.storage = storage;
+
+        this.firestore.settings({
+            ignoreUndefinedProperties: true
+        })
     }
 
     startAuthStateListener(listener: (user?: IUser) => void): void {
