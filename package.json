@@ -17,9 +17,9 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@omnifire/api": "^1.2.6",
-    "@omnifire/rn": "^1.2.6",
-    "@omnifire/web": "^1.2.6",
+    "@omnifire/api": "^1.2.7",
+    "@omnifire/rn": "^1.2.7",
+    "@omnifire/web": "^1.2.7",
     "@reduxjs/toolkit": "^1.6.1"
   },
   "peerDependenciesMeta": {
@@ -37,7 +37,7 @@
     }
   },
   "devDependencies": {
-    "@omnifire/api": "^1.2.6",
+    "@omnifire/api": "^1.2.7",
     "@reduxjs/toolkit": "^1.6.1",
     "@types/uuid": "^8.3.1",
     "typescript": "^4.4.2"

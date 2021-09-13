@@ -372,9 +372,10 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
         const metadata: OFUploadMetadata = {
             contentType: blobSrc.blob.type,
+            contentDisposition: 'attachment',
             customMetadata: {
                 owner: ownerUID,
-                recipient: recipientUID
+                recipient: recipientUID,
             }
         };
 
