@@ -18,6 +18,14 @@ interface IProfileListener {
     unsubscribe: () => void;
 }
 
+const supportedAppInfo = {
+    appInfoSchemaVersion: 1,
+    authVersion: 1,
+    firestoreSchemaVersion: 1,
+    hostingVersion: 1,
+    storageVersion: 1
+}
+
 export default class FirebaseServiceHandler implements IServiceHandler {
 
     private readonly firebase: IFirebase;
@@ -37,6 +45,25 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         this.firestore.settings({
             ignoreUndefinedProperties: true
         })
+    }
+
+    async isServiceHandlerUpToDate(): Promise<boolean> {
+        const appInfo = await this.firestore.collection('appInfo').doc('appInfo').get();
+        const appInfoData = appInfo.data();
+
+        if (!appInfoData) throw new SimpleShareError(ErrorCode.APP_ERROR);
+
+        if (appInfoData.appInfoSchemaVersion !== supportedAppInfo.appInfoSchemaVersion
+            || appInfoData.authVersion !== supportedAppInfo.authVersion
+            || appInfoData.firestoreSchemaVersion !== supportedAppInfo.firestoreSchemaVersion
+            || appInfoData.hostingVersion !== supportedAppInfo.hostingVersion
+            || appInfoData.storageVersion !== supportedAppInfo.storageVersion) {
+                // This version of SimpleShare Common is no longer supported. The host
+                // application must update to a newer version of the library.
+                return false;
+        }
+
+        return true;
     }
 
     startAuthStateListener(listener: (user?: IUser) => void): void {

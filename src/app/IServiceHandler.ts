@@ -2,6 +2,7 @@ import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
 import IUser from "../models/IUser";
 
 export default interface IServiceHandler {
+    isServiceHandlerUpToDate: () => Promise<boolean>;
     signInWithGoogle: () => Promise<IUser>;
     signOut: () => Promise<void>;
     startAuthStateListener: (listener: (user?: IUser) => void) => void;
