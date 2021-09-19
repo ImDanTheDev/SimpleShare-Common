@@ -24,13 +24,20 @@ const initialState: SharesState = {
 export const sendShare = createAsyncThunk('shares/sendShare', async (sendData: {toPhoneNumber: string, toProfileName: string, share: {textContent?: string, fileSrc?: {blob: Blob, ext: string} | {filePath: string, fileType: string}}}, thunkAPI) => {
     const fromUid: string | undefined = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     const fromProfileId: string | undefined = ((thunkAPI.getState() as any).profiles as ProfilesState).currentProfileId;
-    if (!fromUid || !fromProfileId) throw new SimpleShareError(ErrorCode.APP_ERROR, `The user's UID or profile ID is undefined`);
+
+    if (!fromUid) {
+        throw new SimpleShareError(ErrorCode.NOT_SIGNED_IN, 'The user UID is undefined.');
+    }
+
+    if (!fromProfileId) {
+        throw new SimpleShareError(ErrorCode.NO_PROFILE_SELECTED, 'The profile id is undefined.');
+    }
 
     const toUid: string | undefined = await serviceHandler.getUIDFromPhoneNumber(sendData.toPhoneNumber);
-    if (!toUid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The recipient user does not exist.`);
+    if (!toUid) throw new SimpleShareError(ErrorCode.USER_DOES_NOT_EXIST, `The recipient user does not exist.`);
 
     const toProfileId: string | undefined = await serviceHandler.getProfileIdByName(toUid, sendData.toProfileName);
-    if (!toProfileId) throw new SimpleShareError(ErrorCode.APP_ERROR, `The recipient profile does not exist.`);
+    if (!toProfileId) throw new SimpleShareError(ErrorCode.PROFILE_DOES_NOT_EXIST, `The recipient profile does not exist.`);
 
     let fileURL: string | undefined = undefined;
 
@@ -91,7 +98,7 @@ export const startShareListener = createAsyncThunk('shares/startShareListener', 
         
         thunkAPI.dispatch(updateShare({
                 ...share,
-                fromDisplayName: nameData[0].displayName,
+                fromDisplayName: nameData[0]?.displayName,
                 fromProfileName: nameData[1]
         }));
 

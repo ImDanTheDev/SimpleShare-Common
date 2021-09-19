@@ -8,6 +8,7 @@ export interface AccountInfoState {
     accountInfo: IAccountInfo | undefined;
     publicGeneralInfo: IPublicGeneralInfo | undefined;
     fetchedAccount: boolean;
+    fetchAccountError?: SimpleShareError;
     updatingAccount: boolean;
     updatedAccount: boolean;
     updateAccountError?: SimpleShareError;
@@ -17,6 +18,7 @@ const initialState: AccountInfoState = {
     accountInfo: undefined,
     publicGeneralInfo: undefined,
     fetchedAccount: false,
+    fetchAccountError: undefined,
     updatedAccount: false,
     updatingAccount: false,
     updateAccountError: undefined,
@@ -59,10 +61,12 @@ export const accountSlice = createSlice({
         builder.addCase(updateAccount.pending, (state, action) => {
             state.updatedAccount = false;
             state.updatingAccount = true;
+            state.updateAccountError = undefined;
         });
         builder.addCase(updateAccount.fulfilled, (state, action) => {
             state.updatedAccount = true;
             state.updatingAccount = false;
+            state.updateAccountError = undefined;
         });
         builder.addCase(updateAccount.rejected, (state, action) => {
             state.updatedAccount = false;
@@ -71,11 +75,19 @@ export const accountSlice = createSlice({
         });
         builder.addCase(getAllAccountInfo.pending, (state, action) => {
             state.fetchedAccount = false;
+            state.fetchAccountError = undefined;
         });
         builder.addCase(getAllAccountInfo.fulfilled, (state, action) => {
             state.accountInfo = action.payload.accountInfo;
             state.publicGeneralInfo = action.payload.publicGeneralInfo;
             state.fetchedAccount = true;
+            state.fetchAccountError = undefined;
+        });
+        builder.addCase(getAllAccountInfo.rejected, (state, action) => {
+            state.accountInfo = undefined;
+            state.publicGeneralInfo = undefined;
+            state.fetchedAccount = false;
+            state.fetchAccountError = action.error as SimpleShareError;
         });
     }
 });

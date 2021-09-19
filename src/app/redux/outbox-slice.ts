@@ -16,12 +16,12 @@ const initialState: OutboxState = {
 };
 
 export const addShareToOutbox = createAsyncThunk('outbox/addShareToOutbox', async (share: IShare, thunkAPI) => {
-    const toPublicGeneralInfo: IPublicGeneralInfo = await serviceHandler.getPublicGeneralInfo(share.toUid);
+    const toPublicGeneralInfo = await serviceHandler.getPublicGeneralInfo(share.toUid);
     const pfpURL: string = await serviceHandler.getProfilePicture(share.toUid, share.toProfileId);
     return {
         share: {
             ...share,
-            toDisplayName: toPublicGeneralInfo.displayName
+            toDisplayName: toPublicGeneralInfo?.displayName
         },
         pfpURL: pfpURL
     } as OutboxEntry

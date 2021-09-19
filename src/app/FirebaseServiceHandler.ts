@@ -84,10 +84,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
             const userCred = await this.auth.signInWithGoogle();
             const user = userCred.user;
             if (!user) {
-                throw new SimpleShareError(
-                    ErrorCode.UNEXPECTED_SIGN_IN_ERROR,
-                    'User is undefined'
-                );
+                throw new SimpleShareError(ErrorCode.SIGN_IN_USER_NOT_FOUND);
             }
             return {
                 uid: user.uid,
@@ -98,9 +95,22 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 switch (e.code) {
                     case 'auth/popup-closed-by-user':
                         throw new SimpleShareError(ErrorCode.SIGN_IN_CANCELLED);
+                    case 'auth/popup-blocked':
+                        throw new SimpleShareError(ErrorCode.SIGN_IN_BLOCKED);
+                    case 'auth/cancelled-popup-request':
+                        throw new SimpleShareError(ErrorCode.SIGN_IN_POPUP_ALREADY_OPENED);
+                    case 'auth/user-token-expired':
+                        throw new SimpleShareError(ErrorCode.SIGN_IN_EXPIRED_TOKEN);
+                    case 'auth/unverified-email':
+                        throw new SimpleShareError(ErrorCode.SIGN_IN_EMAIL_UNVERIFIED);
+                    case 'auth/user-disabled':
+                        throw new SimpleShareError(ErrorCode.SIGN_IN_ACCOUNT_DISABLED);
                 }
             }
-            throw new SimpleShareError(ErrorCode.UNEXPECTED_SIGN_IN_ERROR);
+            if (e.message === 'NETWORK_ERROR') { // RNFirebase Error
+                throw new SimpleShareError(ErrorCode.NO_NETWORK_CONNECTION);
+            }
+            throw new SimpleShareError(ErrorCode.SIGN_IN_UNEXPECTED_ERROR, JSON.stringify(e));
         }
     }
 
@@ -254,7 +264,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         });
     }
 
-    async getAccountInfo(uid: string | undefined): Promise<IAccountInfo> {
+    async getAccountInfo(uid: string | undefined): Promise<IAccountInfo | undefined> {
         const accountDocRef = this.firestore.collection('accounts').doc(uid);
         const accountDoc = await accountDocRef.get();
 
@@ -265,12 +275,15 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                     isAccountComplete: accountDocData.isAccountComplete,
                     phoneNumber: accountDocData.phoneNumber
                 };
+            } else {
+                throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, 'Account Info was found but does not contain any data.');
             }
+        } else {
+            return undefined;
         }
-        throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, 'Account Info does not exist or data could not be found.');
     }
 
-    async getPublicGeneralInfo(uid: string | undefined): Promise<IPublicGeneralInfo> {
+    async getPublicGeneralInfo(uid: string | undefined): Promise<IPublicGeneralInfo | undefined> {
         const generalInfoDocRef = this.firestore
             .collection('accounts')
             .doc(uid)
@@ -285,9 +298,12 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                     displayName: generalInfoData.displayName,
                     isComplete: generalInfoData.isComplete,
                 } as IPublicGeneralInfo;
+            } else {
+                throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, 'Public General Info was found but does not contain any data.');
             }
+        } else {
+            return undefined;
         }
-        throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, 'Public General Info does not exist or data could not be found.');
     };
 
     async getUIDFromPhoneNumber(phoneNumber: string): Promise<string | undefined> {

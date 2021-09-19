@@ -53,6 +53,7 @@ export const authSlice = createSlice({
         builder.addCase(signInWithGoogle.fulfilled, (state, action) => {
             state.user = action.payload;
             state.signingIn = false;
+            state.signInError = undefined;
         });
         builder.addCase(signInWithGoogle.rejected, (state, action) => {
             state.user = undefined;

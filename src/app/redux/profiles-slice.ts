@@ -16,7 +16,7 @@ export interface ProfilesState {
 
 const initialState: ProfilesState = {
     profiles: [],
-    currentProfileId: undefined,
+    currentProfileId: 'default',
     editingProfiles: false,
     creatingProfile: false,
     createdProfile: false,
