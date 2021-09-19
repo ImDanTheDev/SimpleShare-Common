@@ -105,6 +105,8 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                         throw new SimpleShareError(ErrorCode.SIGN_IN_EMAIL_UNVERIFIED);
                     case 'auth/user-disabled':
                         throw new SimpleShareError(ErrorCode.SIGN_IN_ACCOUNT_DISABLED);
+                    case 'auth/network-request-failed':
+                        throw new SimpleShareError(ErrorCode.NO_NETWORK_CONNECTION);
                 }
             }
             if (e.message === 'NETWORK_ERROR') { // RNFirebase Error
