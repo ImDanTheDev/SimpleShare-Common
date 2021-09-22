@@ -24,4 +24,5 @@ export default interface IServiceHandler {
     uploadFilePath: (ownerUID: string,  recipientUID: string, pathSrc: {filePath: string, fileType: string}) => Promise<string>;
     uploadFileBlob: (ownerUID: string, recipientUID: string, blobSrc: {blob: Blob, ext: string}) => Promise<string>;
     deleteFile: (fileURL: string) => Promise<void>;
+    updateProfile: (uid: string | undefined, profile: IProfile) => Promise<void>;
 }

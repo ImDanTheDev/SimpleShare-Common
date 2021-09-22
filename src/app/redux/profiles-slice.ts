@@ -12,15 +12,25 @@ export interface ProfilesState {
     creatingProfile: boolean;
     createdProfile: boolean;
     createProfileError?: SimpleShareError;
+    profileSelectedForEdit: IProfile | undefined;
+    updatingProfile: boolean,
+    updatedProfile: boolean,
+    updateProfileError?: SimpleShareError,
 }
 
 const initialState: ProfilesState = {
     profiles: [],
     currentProfileId: 'default',
     editingProfiles: false,
+
     creatingProfile: false,
     createdProfile: false,
-    createProfileError: undefined
+    createProfileError: undefined,
+
+    profileSelectedForEdit: undefined,
+    updatingProfile: false,
+    updatedProfile: false,
+    updateProfileError: undefined,
 };
 
 export const createProfile = createAsyncThunk('profiles/createProfile', async (profile: {profile: IProfile, pfpSrc?: Blob | {filePath: string, fileType: string}}, thunkAPI) => {
@@ -38,6 +48,27 @@ export const createProfile = createAsyncThunk('profiles/createProfile', async (p
         ...profile.profile,
         // Use the PFP URL if one was created, otherwise use the provided PFP URL. If neither exists, use the default PFP ID.
         pfp: pfpURL || profile.profile.pfp || constants.DEFAULT_PFP_ID
+    });
+});
+
+export const updateCloudProfile = createAsyncThunk('profiles/updateCloudProfile', async (updatedProfileData: {
+    profile: IProfile,
+    pfpSrc?: Blob | {filePath: string, fileType: string}
+}, thunkAPI) => {
+    const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
+    if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
+
+    // Carry over the old pfp incase a new one is not provided.
+    let pfpURL: string | undefined = updatedProfileData.profile.pfp;
+
+    if (updatedProfileData.pfpSrc) {
+        // Upload profile picture
+        pfpURL = await serviceHandler.uploadProfilePicture(uid, updatedProfileData.pfpSrc);
+    }
+
+    await serviceHandler.updateProfile(uid, {
+        ...updatedProfileData.profile,
+        pfp: pfpURL || updatedProfileData.profile.pfp || constants.DEFAULT_PFP_ID
     });
 });
 
@@ -102,6 +133,9 @@ export const profilesSlice = createSlice({
                 (profile) => profile.id !== action.payload.id
             );
         },
+        selectProfileForEditing: (state, action: PayloadAction<IProfile | undefined>) => {
+            state.profileSelectedForEdit = action.payload;
+        },
         updateProfile: (state, action: PayloadAction<IProfile>) => {
             const target = state.profiles.find(
                 (x) => x.id === action.payload.id
@@ -136,6 +170,21 @@ export const profilesSlice = createSlice({
             state.createdProfile = false;
             state.createProfileError = (action.error as SimpleShareError);
         });
+        builder.addCase(updateCloudProfile.pending, (state, action) => {
+            state.updatingProfile = true;
+            state.updatedProfile = false;
+            state.updateProfileError = undefined;
+        });
+        builder.addCase(updateCloudProfile.fulfilled, (state, action) => {
+            state.updatingProfile = false;
+            state.updatedProfile = true;
+            state.updateProfileError = undefined;
+        });
+        builder.addCase(updateCloudProfile.rejected, (state, action) => {
+            state.updatingProfile = false;
+            state.updatedProfile = false;
+            state.updateProfileError = (action.error as SimpleShareError);
+        });
         builder.addCase(deleteCloudProfile.fulfilled, (state, action) => {});
         builder.addCase(startProfileListener.fulfilled, (state, action) => {});
         builder.addCase(switchProfile.fulfilled, (state, action) => {
@@ -151,5 +200,6 @@ export const {
     setProfiles,
     setCurrentProfile,
     setEditingProfiles,
+    selectProfileForEditing
 } = profilesSlice.actions;
 export default profilesSlice.reducer;

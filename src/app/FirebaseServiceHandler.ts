@@ -436,4 +436,13 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
         return await fileRef?.getDownloadURL() as string;
     }
+
+    async updateProfile(uid: string | undefined, profile: IProfile): Promise<void> {
+        const profileDocRef = this.firestore.collection('accounts').doc(uid).collection('profiles').doc(profile.id);
+
+        await profileDocRef.set({
+            name: profile.name,
+            pfp: profile.pfp,
+        });
+    }
 }
