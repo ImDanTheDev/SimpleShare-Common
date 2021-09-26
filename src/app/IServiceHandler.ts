@@ -6,7 +6,7 @@ export default interface IServiceHandler {
     signInWithGoogle: () => Promise<IUser>;
     signOut: () => Promise<void>;
     startAuthStateListener: (listener: (user?: IUser) => void) => void;
-    updateAccount: (uid: string | undefined, account: {accountInfo: IAccountInfo, publicGeneralInfo: IPublicGeneralInfo}) => Promise<void>;
+    updateAccount: (uid: string | undefined, account: {accountInfo?: IAccountInfo, publicGeneralInfo?: IPublicGeneralInfo}) => Promise<void>;
     sendShare: (share: IShare) => Promise<void>;
     deleteShare: (share: IShare) => Promise<void>;
     createProfile: (uid: string | undefined, profile: IProfile) => Promise<void>;
@@ -25,4 +25,5 @@ export default interface IServiceHandler {
     uploadFileBlob: (ownerUID: string, recipientUID: string, blobSrc: {blob: Blob, ext: string}) => Promise<string>;
     deleteFile: (fileURL: string) => Promise<void>;
     updateProfile: (uid: string | undefined, profile: IProfile) => Promise<void>;
+    startPublicGeneralInfoListener: (uid: string | undefined, updateListener: (publicGeneralInfo: IPublicGeneralInfo) => Promise<void>) => Promise<void>;
 }

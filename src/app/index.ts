@@ -2,7 +2,7 @@ import { IAuth, IFirebase, IFirestore, IStorage } from "@omnifire/api"
 import FirebaseServiceHandler from "./FirebaseServiceHandler";
 import IServiceHandler from "./IServiceHandler";
 import accountReducer, {
-    AccountInfoState as AccountInfoState,
+    AccountInfoState,
 } from './redux/account-slice';
 import profilesReducer, { ProfilesState } from './redux/profiles-slice';
 import sharesReducer, { SharesState } from './redux/shares-slice';

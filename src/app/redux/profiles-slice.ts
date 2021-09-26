@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AuthState, serviceHandler } from '..';
+import { AccountInfoState, AuthState, serviceHandler, updateAccount } from '..';
 import { constants } from '../..';
-import { IProfile } from '../../models';
+import { IProfile, IPublicGeneralInfo } from '../../models';
 import { ErrorCode, SimpleShareError } from '../../SimpleShareError';
 import { startShareListener } from './shares-slice';
 
@@ -76,6 +76,32 @@ export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile'
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     if (!uid) throw new SimpleShareError(ErrorCode.APP_ERROR, `The current user's UID is undefined.`);
     
+    const publicGeneralInfo = (((thunkAPI.getState() as any).user) as AccountInfoState).publicGeneralInfo;
+    if (!publicGeneralInfo) {
+        throw new SimpleShareError(ErrorCode.APP_ERROR, `The user's public general info is undefined.`);
+    }
+
+    const defaultProfileId = publicGeneralInfo.defaultProfileId;
+
+    if (profile.id === defaultProfileId) {
+        const profiles = (((thunkAPI.getState() as any).profiles) as ProfilesState).profiles;
+        // Attempting to delete default profile. Change default profile to next non-default profile.
+        const firstNonDefaultProfileIndex = profiles.findIndex(x => x.id && x.id !== defaultProfileId);
+        if (firstNonDefaultProfileIndex === -1) {
+            // No non-default profiles exist.
+            throw new SimpleShareError(ErrorCode.PROFILE_DOES_NOT_EXIST, 'A non-default profile does not exist.');
+        } else {
+            // Found a non-default profile.
+            const profileToMakeDefault = profiles[firstNonDefaultProfileIndex];
+            await thunkAPI.dispatch(updateAccount({
+                publicGeneralInfo: {
+                    ...publicGeneralInfo,
+                    defaultProfileId: profileToMakeDefault.id,
+                } as IPublicGeneralInfo
+            }))
+        }
+    }
+
     if (profile.pfp) await serviceHandler.deleteProfilePicture(profile.pfp);
     await serviceHandler.deleteProfile(uid, profile);
 });

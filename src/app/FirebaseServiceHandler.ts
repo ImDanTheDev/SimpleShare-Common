@@ -35,6 +35,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
     private shareListeners: IShareListener[] = [];
     private profileListeners: IProfileListener[] = [];
+    private publicGeneralInfoListener: (() => void) | undefined = undefined;
 
     constructor(firebase: IFirebase, firestore: IFirestore, auth: IAuth, storage: IStorage) {
         this.firebase = firebase;
@@ -120,13 +121,17 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         await this.auth.signOut();
     }
 
-    async updateAccount(uid: string | undefined, account: {accountInfo: IAccountInfo, publicGeneralInfo: IPublicGeneralInfo}): Promise<void> {
+    async updateAccount(uid: string | undefined, account: {accountInfo?: IAccountInfo, publicGeneralInfo?: IPublicGeneralInfo}): Promise<void> {
         try {
-            const accountDocRef = this.firestore.collection('accounts').doc(uid);
-            await accountDocRef.set(account.accountInfo);
+            if (account.accountInfo) {
+                const accountDocRef = this.firestore.collection('accounts').doc(uid);
+                await accountDocRef.set(account.accountInfo);
+            }
             
-            const generalInfoDocRef = this.firestore.collection('accounts').doc(uid).collection('public').doc('GeneralInfo');
-            await generalInfoDocRef.set(account.publicGeneralInfo);
+            if (account.publicGeneralInfo) {
+                const generalInfoDocRef = this.firestore.collection('accounts').doc(uid).collection('public').doc('GeneralInfo');
+                await generalInfoDocRef.set(account.publicGeneralInfo);
+            }
         } catch (e) {
             throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, (e as any));
         }
@@ -228,7 +233,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 const shareData = change.doc.data();
                 const share: IShare = {
                     id: changedShareId,
-                    textContent: shareData.textContent || shareData.content, // TODO: Remove .content
+                    textContent: shareData.textContent,
                     fileURL: shareData.fileURL,
                     fromUid: shareData.fromUid,
                     fromProfileId: shareData.fromProfileId,
@@ -299,6 +304,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 return {
                     displayName: generalInfoData.displayName,
                     isComplete: generalInfoData.isComplete,
+                    defaultProfileId: generalInfoData.defaultProfileId
                 } as IPublicGeneralInfo;
             } else {
                 throw new SimpleShareError(ErrorCode.UNEXPECTED_DATABASE_ERROR, 'Public General Info was found but does not contain any data.');
@@ -444,5 +450,27 @@ export default class FirebaseServiceHandler implements IServiceHandler {
             name: profile.name,
             pfp: profile.pfp,
         });
+    }
+
+    async startPublicGeneralInfoListener(uid: string | undefined, updateListener: (publicGeneralInfo: IPublicGeneralInfo) => Promise<void>): Promise<void> {
+        const publicGeneralInfoDocRef = this.firestore.collection('accounts').doc(uid).collection('public').doc('GeneralInfo');
+        const unsubscribe = publicGeneralInfoDocRef.onSnapshot(async (snapshot) => {
+            if (snapshot.exists) {
+                const publicGeneralInfoData = snapshot.data();
+                if (publicGeneralInfoData) {
+                    updateListener({
+                        defaultProfileId: publicGeneralInfoData.defaultProfileId,
+                        displayName: publicGeneralInfoData.displayName,
+                        isComplete: publicGeneralInfoData.isComplete,
+                    });
+                }
+            }
+        });
+
+        if (this.publicGeneralInfoListener) {
+            this.publicGeneralInfoListener();
+            this.publicGeneralInfoListener = undefined;
+        }
+        this.publicGeneralInfoListener = unsubscribe;
     }
 }

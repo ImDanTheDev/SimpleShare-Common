@@ -24,7 +24,7 @@ const initialState: AccountInfoState = {
     updateAccountError: undefined,
 };
 
-export const updateAccount = createAsyncThunk('account/updateAccount', async (account: {accountInfo: IAccountInfo, publicGeneralInfo: IPublicGeneralInfo}, thunkAPI) => {
+export const updateAccount = createAsyncThunk('account/updateAccount', async (account: {accountInfo?: IAccountInfo, publicGeneralInfo?: IPublicGeneralInfo}, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     await serviceHandler.updateAccount(uid, account);
     await thunkAPI.dispatch(getAllAccountInfo());
@@ -38,6 +38,14 @@ export const getAllAccountInfo = createAsyncThunk('account/getAllAccountInfo', a
         accountInfo,
         publicGeneralInfo
     }
+});
+
+export const startPublicGeneralInfoListener = createAsyncThunk('account/startPublicGeneralInfoListener', async (_, thunkAPI) => {
+    const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
+
+    await serviceHandler.startPublicGeneralInfoListener(uid, async (publicGeneralInfo) => {
+        thunkAPI.dispatch(setPublicGeneralInfo(publicGeneralInfo));
+    });
 });
 
 export const accountSlice = createSlice({
