@@ -123,13 +123,31 @@ export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile'
 export const startProfileListener = createAsyncThunk('profiles/startProfileListener', async (_, thunkAPI) => {
     const uid = ((thunkAPI.getState() as any).auth as AuthState).user?.uid;
     await serviceHandler?.startProfileListener(uid, (profile) => {
-        thunkAPI.dispatch(addProfile(profile));
-
         const profilesState: ProfilesState = ((thunkAPI.getState() as any).profiles) as ProfilesState;
+
+        const publicGeneralInfo = (((thunkAPI.getState() as any).user) as AccountInfoState).publicGeneralInfo;
+        if (publicGeneralInfo && publicGeneralInfo.profilePositions) {
+            if (publicGeneralInfo.profilePositions.findIndex(x => x === profile.id) === -1) {
+                thunkAPI.dispatch(addProfile(profile));
+            } else {
+                thunkAPI.dispatch(setProfiles([...profilesState.profiles, profile].sort((a, b) => {
+                    return (
+                        publicGeneralInfo.profilePositions.indexOf(
+                            a.id || ''
+                        ) -
+                        publicGeneralInfo.profilePositions.indexOf(
+                            b.id || ''
+                        )
+                    );
+                })));
+            }
+        } else {
+            thunkAPI.dispatch(addProfile(profile));
+        }
+
+        
         const profileCount = profilesState.profiles.length;
-
         const lastSelectedProfile = ((thunkAPI.getState() as any).localPersist as LocalPersistState).lastSelectedProfile;
-
         if (profileCount === 1 || lastSelectedProfile === profile.id) {
             thunkAPI.dispatch(switchProfile(profile));
         }

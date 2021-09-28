@@ -18,6 +18,11 @@ interface IProfileListener {
     unsubscribe: () => void;
 }
 
+interface IPublicGeneralInfoListener {
+    uid: string;
+    unsubscribe: () => void;
+}
+
 const supportedAppInfo = {
     appInfoSchemaVersion: 1,
     authVersion: 1,
@@ -35,7 +40,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
 
     private shareListeners: IShareListener[] = [];
     private profileListeners: IProfileListener[] = [];
-    private publicGeneralInfoListener: (() => void) | undefined = undefined;
+    private publicGeneralInfoListeners: IPublicGeneralInfoListener[] = [];
 
     constructor(firebase: IFirebase, firestore: IFirestore, auth: IAuth, storage: IStorage) {
         this.firebase = firebase;
@@ -177,6 +182,12 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         updateListener: (profile: IProfile) => void,
         deleteListener: (profile: IProfile) => void): Promise<void> {
         if (!uid) return;
+
+        if (this.profileListeners.findIndex(x => x.uid === uid) !== -1) {
+            // Don't recreate a listener if one already exists for the uid.
+            return;
+        }
+
         const profilesCollection = this.firestore.collection('accounts').doc(uid).collection('profiles');
         const unsubscribe = profilesCollection.onSnapshot((snapshot) => {
             const docChanges = snapshot.docChanges();
@@ -454,6 +465,13 @@ export default class FirebaseServiceHandler implements IServiceHandler {
     }
 
     async startPublicGeneralInfoListener(uid: string | undefined, updateListener: (publicGeneralInfo: IPublicGeneralInfo) => Promise<void>): Promise<void> {
+        if (!uid) return;
+
+        if (this.publicGeneralInfoListeners.findIndex(x => x.uid === uid) !== -1) {
+            // Don't recreate a listener if one already exists for the uid.
+            return;
+        }
+
         const publicGeneralInfoDocRef = this.firestore.collection('accounts').doc(uid).collection('public').doc('GeneralInfo');
         const unsubscribe = publicGeneralInfoDocRef.onSnapshot(async (snapshot) => {
             if (snapshot.exists) {
@@ -469,10 +487,17 @@ export default class FirebaseServiceHandler implements IServiceHandler {
             }
         });
 
-        if (this.publicGeneralInfoListener) {
-            this.publicGeneralInfoListener();
-            this.publicGeneralInfoListener = undefined;
+        // Unsubscribe and remove current listeners.
+        if (this.publicGeneralInfoListeners.length > 0) {
+            for(let listener; (listener = this.publicGeneralInfoListeners.pop());) {
+                listener.unsubscribe();
+            }
         }
-        this.publicGeneralInfoListener = unsubscribe;
+
+        // Add the new publicGeneralInfo listener.
+        this.publicGeneralInfoListeners.push({
+            uid: uid,
+            unsubscribe: unsubscribe
+        });
     }
 }
