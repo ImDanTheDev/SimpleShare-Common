@@ -1,5 +1,5 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { serviceHandler } from "..";
+import { createAsyncThunk, createSlice, isAsyncThunkAction, PayloadAction } from "@reduxjs/toolkit";
+import { ProfilesState, serviceHandler, setProfiles } from "..";
 import { IAccountInfo, IPublicGeneralInfo, IUser } from "../../models";
 import { SimpleShareError } from "../../SimpleShareError";
 import { AuthState } from "./auth-slice";
@@ -45,6 +45,19 @@ export const startPublicGeneralInfoListener = createAsyncThunk('account/startPub
 
     await serviceHandler.startPublicGeneralInfoListener(uid, async (publicGeneralInfo) => {
         thunkAPI.dispatch(setPublicGeneralInfo(publicGeneralInfo));
+
+        const profiles = ((thunkAPI.getState() as any).profiles as ProfilesState).profiles;
+
+        thunkAPI.dispatch(setProfiles([...profiles].sort((a, b) => {
+            return (
+                publicGeneralInfo.profilePositions.indexOf(
+                    a.id || ''
+                ) -
+                publicGeneralInfo.profilePositions.indexOf(
+                    b.id || ''
+                )
+            );
+        })));
     });
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "simpleshare-common",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "description": "Common code shared between various Simple Share applications.",
   "repository": {
     "url": "https://github.com/ImDanTheDev/SimpleShare-Common"
