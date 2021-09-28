@@ -44,11 +44,21 @@ export const createProfile = createAsyncThunk('profiles/createProfile', async (p
         pfpURL = await serviceHandler.uploadProfilePicture(uid, profile.pfpSrc);
     }
 
-    await serviceHandler.createProfile(uid, {
+    //const nextIndex = ((thunkAPI.getState() as any).profiles as ProfilesState).profiles.length;
+
+    const profileId = await serviceHandler.createProfile(uid, {
         ...profile.profile,
         // Use the PFP URL if one was created, otherwise use the provided PFP URL. If neither exists, use the default PFP ID.
-        pfp: pfpURL || profile.profile.pfp || constants.DEFAULT_PFP_ID
+        pfp: pfpURL || profile.profile.pfp || constants.DEFAULT_PFP_ID,
     });
+
+    const publicGeneralInfo = ((thunkAPI.getState() as any).user as AccountInfoState).publicGeneralInfo;
+    if (!publicGeneralInfo) return;
+
+    await serviceHandler.updateAccount(uid, {publicGeneralInfo: {
+        ...publicGeneralInfo,
+        profilePositions: [profileId, ...publicGeneralInfo.profilePositions]
+    } as IPublicGeneralInfo});
 });
 
 export const updateCloudProfile = createAsyncThunk('profiles/updateCloudProfile', async (updatedProfileData: {
@@ -82,9 +92,8 @@ export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile'
     }
 
     const defaultProfileId = publicGeneralInfo.defaultProfileId;
-
+    const profiles = (((thunkAPI.getState() as any).profiles) as ProfilesState).profiles;
     if (profile.id === defaultProfileId) {
-        const profiles = (((thunkAPI.getState() as any).profiles) as ProfilesState).profiles;
         // Attempting to delete default profile. Change default profile to next non-default profile.
         const firstNonDefaultProfileIndex = profiles.findIndex(x => x.id && x.id !== defaultProfileId);
         if (firstNonDefaultProfileIndex === -1) {
@@ -104,6 +113,11 @@ export const deleteCloudProfile = createAsyncThunk('profiles/deleteCloudProfile'
 
     if (profile.pfp) await serviceHandler.deleteProfilePicture(profile.pfp);
     await serviceHandler.deleteProfile(uid, profile);
+
+    await serviceHandler.updateAccount(uid, {publicGeneralInfo: {
+        ...publicGeneralInfo,
+        profilePositions: profiles.filter(x => x.id !== profile.id).map(x => x.id)
+    } as IPublicGeneralInfo});
 });
 
 export const startProfileListener = createAsyncThunk('profiles/startProfileListener', async (_, thunkAPI) => {

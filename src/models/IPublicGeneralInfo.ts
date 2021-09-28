@@ -3,6 +3,7 @@ import { MAX_DISPLAY_NAME_LENGTH, MIN_DISPLAY_NAME_LENGTH } from '../constants';
 export default interface IPublicGeneralInfo {
     displayName: string | undefined;
     defaultProfileId: string;
+    profilePositions: string[];
     isComplete: boolean;
 }
 

@@ -21,7 +21,7 @@ interface IProfileListener {
 const supportedAppInfo = {
     appInfoSchemaVersion: 1,
     authVersion: 1,
-    firestoreSchemaVersion: 1,
+    firestoreSchemaVersion: 2,
     hostingVersion: 1,
     storageVersion: 1
 }
@@ -147,13 +147,14 @@ export default class FirebaseServiceHandler implements IServiceHandler {
         await shareDoc.delete();
     }
 
-    async createProfile(uid: string | undefined, profile: IProfile): Promise<void> {
+    async createProfile(uid: string | undefined, profile: IProfile): Promise<string> {
         const profileDocRef = this.firestore.collection('accounts').doc(uid).collection('profiles').doc(profile.id);
 
         await profileDocRef.set({
             name: profile.name,
             pfp: profile.pfp,
         });
+        return profileDocRef.id;
     }
 
     async deleteProfile(uid: string | undefined, profile: IProfile): Promise<void> {
@@ -462,6 +463,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                         defaultProfileId: publicGeneralInfoData.defaultProfileId,
                         displayName: publicGeneralInfoData.displayName,
                         isComplete: publicGeneralInfoData.isComplete,
+                        profilePositions: publicGeneralInfoData.profilePositions
                     });
                 }
             }
