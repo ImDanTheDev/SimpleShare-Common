@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AccountInfoState, AuthState, serviceHandler, updateAccount } from '..';
+import { AccountInfoState, AuthState, LocalPersistState, serviceHandler, setLastSelectedProfile, updateAccount } from '..';
 import { constants } from '../..';
 import { IProfile, IPublicGeneralInfo } from '../../models';
 import { ErrorCode, SimpleShareError } from '../../SimpleShareError';
@@ -44,8 +44,6 @@ export const createProfile = createAsyncThunk('profiles/createProfile', async (p
         pfpURL = await serviceHandler.uploadProfilePicture(uid, profile.pfpSrc);
     }
 
-    //const nextIndex = ((thunkAPI.getState() as any).profiles as ProfilesState).profiles.length;
-
     const profileId = await serviceHandler.createProfile(uid, {
         ...profile.profile,
         // Use the PFP URL if one was created, otherwise use the provided PFP URL. If neither exists, use the default PFP ID.
@@ -55,9 +53,11 @@ export const createProfile = createAsyncThunk('profiles/createProfile', async (p
     const publicGeneralInfo = ((thunkAPI.getState() as any).user as AccountInfoState).publicGeneralInfo;
     if (!publicGeneralInfo) return;
 
+    const profiles = ((thunkAPI.getState() as any).profiles as ProfilesState).profiles;
+
     await serviceHandler.updateAccount(uid, {publicGeneralInfo: {
         ...publicGeneralInfo,
-        profilePositions: [profileId, ...publicGeneralInfo.profilePositions]
+        profilePositions: [profileId, ...publicGeneralInfo.profilePositions || profiles.map(x => x.id)]
     } as IPublicGeneralInfo});
 });
 
@@ -128,7 +128,9 @@ export const startProfileListener = createAsyncThunk('profiles/startProfileListe
         const profilesState: ProfilesState = ((thunkAPI.getState() as any).profiles) as ProfilesState;
         const profileCount = profilesState.profiles.length;
 
-        if (profileCount === 1) {
+        const lastSelectedProfile = ((thunkAPI.getState() as any).localPersist as LocalPersistState).lastSelectedProfile;
+
+        if (profileCount === 1 || lastSelectedProfile === profile.id) {
             thunkAPI.dispatch(switchProfile(profile));
         }
     }, (profile) => {
@@ -150,6 +152,7 @@ export const startProfileListener = createAsyncThunk('profiles/startProfileListe
 
 export const switchProfile = createAsyncThunk('profiles/switchProfile', async (profile: IProfile, thunkAPI) => {
     await thunkAPI.dispatch(startShareListener(profile));
+    thunkAPI.dispatch(setLastSelectedProfile(profile.id));
     return profile;
 });
 

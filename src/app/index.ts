@@ -8,6 +8,7 @@ import profilesReducer, { ProfilesState } from './redux/profiles-slice';
 import sharesReducer, { SharesState } from './redux/shares-slice';
 import outboxReducer, { OutboxState } from './redux/outbox-slice';
 import authReducer, { AuthState } from './redux/auth-slice';
+import localPersistReducer, { LocalPersistState } from './redux/local-persist-slice';
 
 export let serviceHandler: IServiceHandler;
 
@@ -21,6 +22,7 @@ export const reduxReducers = {
     sharesReducer,
     outboxReducer,
     authReducer,
+    localPersistReducer,
 };
 
 export {
@@ -29,6 +31,7 @@ export {
     SharesState,
     OutboxState,
     AuthState,
+    LocalPersistState,
 }
 
 export * from './redux/account-slice';
@@ -36,3 +39,4 @@ export * from './redux/auth-slice';
 export * from './redux/outbox-slice';
 export * from './redux/profiles-slice';
 export * from './redux/shares-slice';
+export * from './redux/local-persist-slice';
