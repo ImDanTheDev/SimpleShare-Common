@@ -500,4 +500,19 @@ export default class FirebaseServiceHandler implements IServiceHandler {
             unsubscribe: unsubscribe
         });
     }
+
+    async searchProfiles(phoneNumber: string): Promise<IProfile[]> {
+        const uid = await this.getUIDFromPhoneNumber(phoneNumber);
+        if (!uid) return [];
+
+        const profileDocs = await this.firestore.collection('accounts').doc(uid).collection('profiles').get();
+        return profileDocs.docs.map(doc => {
+            const docData = doc.data();
+            return {
+                name: docData.name,
+                id: doc.id,
+                pfp: docData.pfp
+            } as IProfile;
+        });
+    } 
 }

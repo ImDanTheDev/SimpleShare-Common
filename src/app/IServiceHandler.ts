@@ -26,4 +26,5 @@ export default interface IServiceHandler {
     deleteFile: (fileURL: string) => Promise<void>;
     updateProfile: (uid: string | undefined, profile: IProfile) => Promise<void>;
     startPublicGeneralInfoListener: (uid: string | undefined, updateListener: (publicGeneralInfo: IPublicGeneralInfo) => Promise<void>) => Promise<void>;
+    searchProfiles: (phoneNumber: string) => Promise<IProfile[]>;
 }
