@@ -1,4 +1,5 @@
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
+import { INotification } from "../models/INotification";
 import IUser from "../models/IUser";
 
 export default interface IServiceHandler {
@@ -27,4 +28,5 @@ export default interface IServiceHandler {
     updateProfile: (uid: string | undefined, profile: IProfile) => Promise<void>;
     startPublicGeneralInfoListener: (uid: string | undefined, updateListener: (publicGeneralInfo: IPublicGeneralInfo) => Promise<void>) => Promise<void>;
     searchProfiles: (phoneNumber: string) => Promise<IProfile[]>;
+    startNotificationListener: (uid: string, listener: (notification: INotification) => Promise<void>) => Promise<void>;
 }

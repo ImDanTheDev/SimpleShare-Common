@@ -1,4 +1,4 @@
-import { IAuth, IFirebase, IFirestore, IReference, IStorage, OFUploadMetadata } from "@omnifire/api";
+import { IAuth, IDocumentReference, IFirebase, IFirestore, IReference, IStorage, OFUploadMetadata } from "@omnifire/api";
 import { updateShare } from ".";
 import { constants } from "..";
 import { IAccountInfo, IProfile, IPublicGeneralInfo, IShare } from "../models";
@@ -6,6 +6,7 @@ import IUser from "../models/IUser";
 import { ErrorCode, SimpleShareError } from "../SimpleShareError";
 import IServiceHandler from "./IServiceHandler";
 import { v4 as uuid} from 'uuid';
+import { INotification } from "../models/INotification";
 
 interface IShareListener {
     uid: string;
@@ -19,6 +20,11 @@ interface IProfileListener {
 }
 
 interface IPublicGeneralInfoListener {
+    uid: string;
+    unsubscribe: () => void;
+}
+
+interface INotificationListener {
     uid: string;
     unsubscribe: () => void;
 }
@@ -41,6 +47,7 @@ export default class FirebaseServiceHandler implements IServiceHandler {
     private shareListeners: IShareListener[] = [];
     private profileListeners: IProfileListener[] = [];
     private publicGeneralInfoListeners: IPublicGeneralInfoListener[] = [];
+    private notificationListeners: INotificationListener[] = [];
 
     constructor(firebase: IFirebase, firestore: IFirestore, auth: IAuth, storage: IStorage) {
         this.firebase = firebase;
@@ -514,5 +521,61 @@ export default class FirebaseServiceHandler implements IServiceHandler {
                 pfp: docData.pfp
             } as IProfile;
         });
-    } 
+    }
+
+    async startNotificationListener(uid: string, listener: (notification: INotification) => Promise<void>) {
+        if (!uid) return;
+
+        if (this.notificationListeners.findIndex(x => x.uid === uid) !== -1) {
+            // Don't recreate a listener if one already exists for the uid.
+            return;
+        }
+
+        const notificationsCollection = this.firestore.collection('accounts').doc(uid).collection('notifications');
+
+        const unsubscribe = notificationsCollection.onSnapshot(async (snapshot) => {
+            const docChanges = snapshot.docChanges();
+            docChanges.forEach(async (change) => {
+                const notificationData = change.doc.data();
+
+                switch (change.type) {
+                    case 'added':
+                        const shareDoc = await (notificationData.share as IDocumentReference).get();
+                        const shareData = shareDoc.data();
+                        await listener({
+                            share: shareData ? {
+                                id: shareDoc.id,
+                                textContent: shareData.textContent,
+                                fileURL: shareData.fileURL,
+                                fromUid: shareData.fromUid,
+                                fromProfileId: shareData.fromProfileId,
+                                toUid: shareData.toUid,
+                                toProfileId: shareData.toProfileId,
+                                fromDisplayName: notificationData.fromDisplayName,
+                                fromProfileName: notificationData.fromProfileName
+                            } as IShare : {
+                                fromDisplayName: notificationData.fromDisplayName,
+                                fromProfileName: notificationData.fromProfileName
+                            } as IShare,
+                        } as INotification);
+
+                        await change.doc.ref.delete();
+                        break;
+                }
+            });
+        });
+
+        // Unsubscribe and remove current notification listeners.
+        if (this.notificationListeners.length > 0) {
+            for(let listener; (listener = this.notificationListeners.pop());) {
+                listener.unsubscribe();
+            }
+        }
+
+        // Add the new profile listener.
+        this.notificationListeners.push({
+            uid: uid,
+            unsubscribe: unsubscribe
+        });
+    }
 }

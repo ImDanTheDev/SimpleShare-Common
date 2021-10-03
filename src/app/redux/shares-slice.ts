@@ -95,7 +95,7 @@ export const startShareListener = createAsyncThunk('shares/startShareListener', 
             serviceHandler.getPublicGeneralInfo(share.fromUid),
             serviceHandler.getProfileNameById(share.fromUid, share.fromProfileId),
         ]);
-        
+
         thunkAPI.dispatch(updateShare({
                 ...share,
                 fromDisplayName: nameData[0]?.displayName,
@@ -127,14 +127,14 @@ export const sharesSlice = createSlice({
         updateShare: (state, action: PayloadAction<IShare>) => {
             const target = state.shares.find((x) => x.id === action.payload.id);
             if (!target) return;
-            target.textContent = action.payload.textContent;
-            target.fileURL = action.payload.fileURL;
-            target.fromProfileId = action.payload.fromProfileId;
-            target.fromUid = action.payload.fromUid;
-            target.toProfileId = action.payload.toProfileId;
-            target.toUid = action.payload.toUid;
-            target.fromDisplayName = action.payload.fromDisplayName;
-            target.fromProfileName = action.payload.fromProfileName;
+            if(action.payload.textContent) target.textContent = action.payload.textContent;
+            if(action.payload.fileURL) target.fileURL = action.payload.fileURL;
+            if(action.payload.fromProfileId) target.fromProfileId = action.payload.fromProfileId;
+            if(action.payload.fromUid) target.fromUid = action.payload.fromUid;
+            if(action.payload.toProfileId) target.toProfileId = action.payload.toProfileId;
+            if(action.payload.toUid) target.toUid = action.payload.toUid;
+            if(action.payload.fromDisplayName) target.fromDisplayName = action.payload.fromDisplayName;
+            if(action.payload.fromProfileName) target.fromProfileName = action.payload.fromProfileName;
         },
         setCurrentShare: (state, action: PayloadAction<IShare>) => {
             state.currentShare = action.payload;
