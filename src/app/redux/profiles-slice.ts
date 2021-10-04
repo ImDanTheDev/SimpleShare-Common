@@ -148,9 +148,11 @@ export const startProfileListener = createAsyncThunk('profiles/startProfileListe
         
         const profileCount = profilesState.profiles.length;
         const lastSelectedProfile = ((thunkAPI.getState() as any).localPersist as LocalPersistState).lastSelectedProfile;
-        if (profileCount === 1 || lastSelectedProfile === profile.id) {
+
+        if (profileCount === 1 || !lastSelectedProfile || lastSelectedProfile === profile.id) {
             thunkAPI.dispatch(switchProfile(profile));
         }
+
     }, (profile) => {
         thunkAPI.dispatch(updateProfile(profile));
     }, (profile) => {
